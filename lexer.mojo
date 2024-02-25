@@ -1,39 +1,23 @@
-from collections.optional import Optional
-from collections.vector import DynamicVector, CollectionElement
+from collections.vector import DynamicVector
 
 
 @value
 @register_passable
 struct Token:
-    var __value: Int
+    var value: Int
 
     fn __str__(inout self) -> String:
-        return '<Token: ' + String(self.__value) + '>'
+        return '<Token: ' + String(self.value) + '>'
 
 
-# hacky Golang-style iota enum, since there is no native Mojo enum yet
-struct Iota:
-    var __value: Int
-
-    fn __init__(inout self):
-        self.__value = 0
-
-    fn __call__(inout self) -> Int:
-        let result: Int = self.__value
-        self.__value += 1
-        return result
-
-
-var token_enum = Iota()
-
-let LITERAL_CHARACTER : Token = Token(token_enum())
-let QUESTION_MARK     : Token = Token(token_enum())
-let DOT               : Token = Token(token_enum())
-let ASTERISK          : Token = Token(token_enum())
-let PLUS              : Token = Token(token_enum())
-let OPEN_BRACKET      : Token = Token(token_enum())
-let CLOSE_BRACKET     : Token = Token(token_enum())
-let PIPE              : Token = Token(token_enum())
+alias LITERAL_CHARACTER: Token = Token(0)
+alias QUESTION_MARK: Token     = Token(1)
+alias DOT: Token               = Token(2)
+alias ASTERISK: Token          = Token(3)
+alias PLUS: Token              = Token(4)
+alias OPEN_BRACKET: Token      = Token(5)
+alias CLOSE_BRACKET: Token     = Token(6)
+alias PIPE: Token              = Token(7)
 
 
 @value
@@ -47,10 +31,10 @@ struct Lexeme(CollectionElement):
 
 
 struct Lexer:
-    var __lexemes: DynamicVector[Lexeme]
+    var lexemes: DynamicVector[Lexeme]
 
     fn __init__(inout self):
-        self.__lexemes = DynamicVector[Lexeme]()
+        self.lexemes = DynamicVector[Lexeme]()
 
     fn lex(inout self, re: String) raises -> None:
         var idx: Int = 0
@@ -60,15 +44,18 @@ struct Lexer:
                 if idx + 1 == len(re):
                     raise Error('Broken escape sequence at the end of the expression.')
 
-                if not (re[idx + 1] == '\\' or re[idx + 1] == '?' or re[idx + 1] == '.' or re[idx + 1] == '*' or re[idx + 1] == '+' or re[idx + 1] == '(' or re[idx + 1] == ')' or re[idx + 1] == '|'):
+                if re[idx + 1] != '\\' or re[idx + 1] != '?' or re[idx + 1] != '.' \
+                    or re[idx + 1] != '*' or re[idx + 1] != '+' or re[idx + 1] != '(' \
+                    or re[idx + 1] != ')' or re[idx + 1] != '|':
+
                     raise Error('Bad escape sequence: ' + re[idx:idx + 2] + '.')
 
-                self.__lexemes.push_back(self.create_lexeme(ord(re[idx + 1]), True))
+                self.lexemes.push_back(self.create_lexeme(ord(re[idx + 1]), True))
                 idx += 2
                 continue
 
             # normal case
-            self.__lexemes.push_back(self.create_lexeme(ord(re[idx])))
+            self.lexemes.push_back(self.create_lexeme(ord(re[idx])))
             idx += 1
 
 
@@ -93,9 +80,10 @@ struct Lexer:
 
         return Lexeme(LITERAL_CHARACTER, char)
 
+
 fn main() raises:
     var lexer: Lexer = Lexer()
-    lexer.lex('qwerty\a')
+    lexer.lex('qq?.*()|')
 
-    for i in range(len(lexer.__lexemes)):
-        print(lexer.__lexemes[i].__str__())
+    for i in range(len(lexer.lexemes)):
+        print(lexer.lexemes[i].__str__())
